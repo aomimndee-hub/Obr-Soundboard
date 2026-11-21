@@ -36,6 +36,7 @@ function build() {
   built = sig;
   const box = $('list');
   box.innerHTML = '';
+  if (!isGM()) return;
   if (!lib.length) { box.innerHTML = '<div class="empty">ยังไม่มีเสียง' + (isGM() ? ' — เพิ่มด้านบนได้เลย' : ' — รอ GM เพิ่มเสียง') + '</div>'; return; }
   for (const t of lib) {
     const d = document.createElement('div');
@@ -104,7 +105,7 @@ async function addUrl() {
   const u = $('urlIn').value.trim(); if (!u) return;
   const id = ytId(u);
   const name = $('nameIn').value.trim();
-  const t = id ? { i: uid(), n: name || 'YouTube ' + id, k: 'y', s: id } : { i: uid(), n: name || decodeURIComponent(u.split('/').pop().split('?')[0]) || 'เสียง', k: 'u', s: u };
+  const t = id ? { i: uid(), n: name || 'YouTube ' + id, k: 'y', s: id } : { i: uid(), n: name || 'เสียง ' + (lib.length + 1), k: 'u', s: u };
   if (!id && !/^https?:\/\//.test(u)) { OBR.notification.show('ลิงก์ไม่ถูกต้อง', 'ERROR'); return; }
   if (await saveLib([...lib, t])) { $('urlIn').value = ''; $('nameIn').value = ''; }
 }
