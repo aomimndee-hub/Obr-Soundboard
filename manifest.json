@@ -6,10 +6,10 @@
   "author": "you",
   "action": {
     "title": "Soundboard",
-    "icon": "/icon.svg",
-    "popover": "/index.html",
+    "icon": "/Obr-Soundboard/icon.svg",
+    "popover": "/Obr-Soundboard/index.html",
     "width": 440,
     "height": 620
   },
-  "background_url": "/background.html"
+  "background_url": "/Obr-Soundboard/background.html"
 }
