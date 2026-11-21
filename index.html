@@ -3,11 +3,12 @@
 <link rel="stylesheet" href="style.css"><title>Soundboard</title></head>
 <body>
 <div id="app">
-  <div id="unlock" class="warn hidden">🔇 เบราว์เซอร์ยังไม่อนุญาตให้เล่นเสียง <button id="unlockBtn">กดเพื่อเปิดเสียง</button></div>
-  <div id="notoken" class="note hidden">ℹ️ ไม่พบ token ของคุณ — เสียงแบบอิงระยะจะเงียบ จนกว่าจะมี token ตัวละครของคุณบนแผนที่</div>
+  <header class="hud"><b>SOUND<i>BOARD</i></b><span>ระบบเสียงและบรรยากาศในห้อง</span></header>
+  <div id="unlock" class="warn hidden"><span>เบราว์เซอร์ยังไม่อนุญาตให้เล่นเสียง</span><button id="unlockBtn">กดเพื่อเปิดเสียง</button></div>
+  <div id="notoken" class="note hidden">ไม่พบ token ของคุณ — เสียงแบบอิงระยะจะเงียบ จนกว่าจะมี token ตัวละครของคุณบนแผนที่</div>
 
-  <section class="row">
-    <label>🔊 ระดับเสียงรวม (เฉพาะเครื่องคุณ)</label>
+  <section class="row master">
+    <label>ระดับเสียงรวม (เฉพาะเครื่องคุณ)</label>
     <input type="range" id="master" min="0" max="1" step="0.01">
   </section>
 
@@ -15,13 +16,14 @@
     <h3>เพิ่มเสียง</h3>
     <div class="row"><input id="urlIn" placeholder="ลิงก์ YouTube หรือลิงก์ไฟล์เสียง (.mp3/.ogg/.wav)"><button id="addUrl">เพิ่ม</button></div>
     <div class="row"><input id="nameIn" placeholder="ชื่อ (ไม่ใส่ก็ได้)"></div>
-    <div class="row"><label class="btn">📁 นำเข้าไฟล์เสียง<input type="file" id="fileIn" accept="audio/*" multiple hidden></label>
+    <div class="row"><label class="btn">นำเข้าไฟล์เสียง<input type="file" id="fileIn" accept="audio/*" multiple hidden></label>
       <span class="hint">ไฟล์ที่นำเข้าเก็บในเครื่อง — ผู้เล่นต้องนำเข้าไฟล์เดียวกันเอง หรือใช้ลิงก์แทน</span></div>
     <div id="sizeInfo" class="hint"></div>
   </section>
 
   <section id="list"></section>
-  <div class="row gmOnly hidden"><button id="stopAll" class="danger">⏹ หยุดทั้งหมด</button></div>
-  <div class="hint foot">💡 GM: คลิกขวา token/ของบนแผนที่ → <b>ผูกเสียงกับของชิ้นนี้</b> เพื่อให้เสียงดังขึ้นเมื่อ token ผู้เล่นเข้าใกล้ (และแยกซ้าย-ขวา)</div>
+  <div class="row gmOnly hidden"><button id="stopAll" class="danger">หยุดทั้งหมด</button></div>
+  <div class="hint foot">GM: คลิกขวา token/ของบนแผนที่ → <b>ผูกเสียงกับของชิ้นนี้</b> เพื่อให้เสียงดังขึ้นเมื่อ token ผู้เล่นเข้าใกล้ (และแยกซ้าย-ขวา)</div>
 </div>
+<script src="theme.js"></script>
 <script src="dist/ui.js"></script></body></html>
