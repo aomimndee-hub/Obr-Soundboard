@@ -1,0 +1,15 @@
+{
+  "name": "Soundboard & Ambience",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "description": "Soundboard / ambient / soundtrack ที่ sync ทุกคน รองรับ YouTube, ไฟล์เสียง และเสียงตามระยะ token (ซ้าย-ขวา)",
+  "author": "you",
+  "action": {
+    "title": "Soundboard",
+    "icon": "icon.svg",
+    "popover": "index.html",
+    "width": 440,
+    "height": 620
+  },
+  "background_url": "background.html"
+}

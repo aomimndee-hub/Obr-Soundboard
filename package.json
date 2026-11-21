@@ -1,0 +1,1 @@
+{ "name":"obr-soundboard","private":true,"scripts":{"build":"esbuild src/bg.js src/ui.js src/emitter.js --bundle --minify --format=iife --outdir=dist"},"dependencies":{"@owlbear-rodeo/sdk":"^3.1.0"},"devDependencies":{"esbuild":"^0.24.0"} }

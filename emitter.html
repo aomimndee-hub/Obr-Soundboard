@@ -1,0 +1,10 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"><title>ผูกเสียง</title></head>
+<body><div id="app">
+  <div class="card">
+    <h3>ผูกเสียงกับของที่เลือก (<span id="cnt">0</span> ชิ้น)</h3>
+    <div class="row"><label>เสียง</label><select id="track"></select></div>
+    <div class="row"><label>รัศมีได้ยิน</label><input type="range" id="radius" min="1" max="60" step="1" value="8"><b id="rv">8</b><span class="hint">ช่อง</span></div>
+    <div class="hint">ใกล้ = ดังเต็ม, ไกลถึงขอบรัศมี = เงียบ. ถ้าของอยู่ทางขวาของ token เสียงจะออกหูขวา (ซ้าย-ขวาเช่นกัน). เสียงนี้ต้องกด ▶ เล่นใน Soundboard ก่อน</div>
+    <div class="row"><button id="apply">บันทึก</button><button id="remove" class="danger">ลบเสียงออกจากของนี้</button></div>
+  </div>
+</div><script src="dist/emitter.js"></script></body></html>
