@@ -1,6 +1,6 @@
 {
   "name": "Soundboard & Ambience",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "manifest_version": 1,
   "description": "Soundboard / ambient / soundtrack sync ทุกคน",
   "author": "you",
@@ -11,5 +11,11 @@
     "width": 440,
     "height": 620
   },
-  "background_url": "https://aomimndee-hub.github.io/Obr-Soundboard/background.html"
+  "background_url": "https://aomimndee-hub.github.io/Obr-Soundboard/background.html",
+  "permissions": [
+    {
+      "name": "autoplay",
+      "reason": "เล่นเสียงและเพลงพื้นหลังให้ทุกคนในห้อง"
+    }
+  ]
 }
