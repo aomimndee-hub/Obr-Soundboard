@@ -57,8 +57,8 @@ class AudioPlayer {
     if (!this.el) return;
     if (this.web) {
       const t = getCtx().currentTime;
-      this.gain.gain.setTargetAtTime(g, t, 0.08);
-      this.panner.pan.setTargetAtTime(pan, t, 0.08);
+      this.gain.gain.setTargetAtTime(g, t, 0.025);
+      this.panner.pan.setTargetAtTime(pan, t, 0.025);
     } else this.el.volume = Math.max(0, Math.min(1, g));
   }
   destroy() { this.pause(); if (this.el) this.el.removeAttribute('src'); }
@@ -186,19 +186,76 @@ async function loadScene() {
   items = await OBR.scene.items.getItems();
   dpi = await OBR.scene.grid.getDpi();
 }
+// อัปเดตเฉพาะระดับเสียงและซ้าย-ขวาทันทีเมื่อ token เปลี่ยน โดยไม่รอลูปหลัก
+function updateLevels() {
+  const local = getLocal(), master = local.master ?? 0.8, ls = listeners();
+  for (const t of lib) {
+    const s = st[t.i] || {}, p = players.get(t.i);
+    if (!p || !p.ready || !s.p) continue;
+    const lv = levelFor(t, ls), mine = (local.t && local.t[t.i]) || {};
+    p.level((s.v ?? 0.8) * lv.g * master * (mine.m ? 0 : (mine.v ?? 1)), lv.pan);
+  }
+}
+
+// วงรัศมีเสียง: เป็น local item จึงเห็นเฉพาะ GM เครื่องนี้
+const RING_PREFIX = 'com.sbx.audio/ring/';
+const ringMap = new Map();
+let ringBusy = false, ringAgain = false;
+function makeRing(item, id, radius, style) {
+  const now = new Date().toISOString(), size = radius * 2 * dpi;
+  return {
+    id, type: 'SHAPE', name: 'Sound radius', visible: true, locked: true, createdUserId: myId, zIndex: Date.now(),
+    lastModified: now, lastModifiedUserId: myId, position: { x: item.position.x, y: item.position.y }, rotation: 0,
+    scale: { x: 1, y: 1 }, metadata: {}, layer: 'DRAWING', attachedTo: item.id, disableHit: true,
+    disableAttachmentBehavior: ['SCALE', 'ROTATION', 'LOCKED', 'COPY'], width: size, height: size, shapeType: 'CIRCLE', style,
+  };
+}
+async function clearRings() {
+  ringMap.clear();
+  try {
+    const ids = (await OBR.scene.local.getItems()).filter((i) => i.id.startsWith(RING_PREFIX)).map((i) => i.id);
+    if (ids.length) await OBR.scene.local.deleteItems(ids);
+  } catch (e) { console.warn(e); }
+}
+async function syncRings() {
+  if (ringBusy) { ringAgain = true; return; }
+  ringBusy = true;
+  try {
+    do {
+      ringAgain = false;
+      if (!sceneReady) break;
+      const want = new Map();
+      if (role === 'GM') for (const i of items) { const m = i.metadata && i.metadata[EM_KEY]; if (m) want.set(i.id, { item: i, r: m.r || 8 }); }
+      const del = [], add = [];
+      for (const [id, k] of ringMap) { const w = want.get(id); if (!w || w.r !== k.r || k.d !== dpi) { del.push(...k.ids); ringMap.delete(id); } }
+      for (const [id, w] of want) {
+        if (ringMap.has(id)) continue;
+        const outer = RING_PREFIX + id + '/outer', inner = RING_PREFIX + id + '/inner';
+        add.push(
+          makeRing(w.item, outer, w.r, { fillColor: '#17aef5', fillOpacity: 0.07, strokeColor: '#17aef5', strokeOpacity: 0.9, strokeWidth: 5, strokeDash: [24, 14] }),
+          makeRing(w.item, inner, Math.min(1.5, w.r * 0.15), { fillColor: '#ffd83d', fillOpacity: 0.1, strokeColor: '#ffd83d', strokeOpacity: 0.9, strokeWidth: 3, strokeDash: [] }),
+        );
+        ringMap.set(id, { r: w.r, d: dpi, ids: [outer, inner] });
+      }
+      if (del.length) await OBR.scene.local.deleteItems(del);
+      if (add.length) await OBR.scene.local.addItems(add);
+    } while (ringAgain);
+  } catch (e) { console.warn(e); } finally { ringBusy = false; }
+}
+
 OBR.onReady(async () => {
   myId = OBR.player.id;
   role = await OBR.player.getRole();
   selection = (await OBR.player.getSelection()) || [];
-  OBR.player.onChange((p) => { role = p.role; selection = p.selection || []; });
+  OBR.player.onChange((p) => { role = p.role; selection = p.selection || []; updateLevels(); syncRings(); });
   applyRoom(await OBR.room.getMetadata());
   OBR.room.onMetadataChange(applyRoom);
 
   const onScene = async (ready) => {
     sceneReady = ready;
     if (unsubItems) { unsubItems(); unsubItems = null; }
-    if (ready) { await loadScene(); unsubItems = OBR.scene.items.onChange((i) => { items = i; }); }
-    else items = [];
+    if (ready) { await loadScene(); await clearRings(); syncRings(); updateLevels(); unsubItems = OBR.scene.items.onChange((i) => { items = i; updateLevels(); syncRings(); }); }
+    else { items = []; ringMap.clear(); }
   };
   OBR.scene.onReadyChange(onScene);
   onScene(await OBR.scene.isReady());
