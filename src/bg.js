@@ -206,8 +206,8 @@ function makeRing(item, id, radius, style) {
   return {
     id, type: 'SHAPE', name: 'Sound radius', visible: true, locked: true, createdUserId: myId, zIndex: Date.now(),
     lastModified: now, lastModifiedUserId: myId, position: { x: item.position.x, y: item.position.y }, rotation: 0,
-    scale: { x: 1, y: 1 }, metadata: {}, layer: 'DRAWING', attachedTo: item.id, disableHit: true,
-    disableAttachmentBehavior: ['SCALE', 'ROTATION', 'LOCKED', 'COPY'], width: size, height: size, shapeType: 'CIRCLE', style,
+    scale: { x: 1, y: 1 }, metadata: {}, layer: 'DRAWING', disableHit: true,
+    width: size, height: size, shapeType: 'CIRCLE', style,
   };
 }
 async function clearRings() {
@@ -228,6 +228,8 @@ async function syncRings() {
       if (role === 'GM') for (const i of items) { const m = i.metadata && i.metadata[EM_KEY]; if (m) want.set(i.id, { item: i, r: m.r || 8 }); }
       const del = [], add = [];
       for (const [id, k] of ringMap) { const w = want.get(id); if (!w || w.r !== k.r || k.d !== dpi) { del.push(...k.ids); ringMap.delete(id); } }
+      const mv = [];
+      for (const [id, k] of ringMap) { const w = want.get(id); if (w && (w.item.position.x !== k.x || w.item.position.y !== k.y)) { mv.push([k.ids, { x: w.item.position.x, y: w.item.position.y }]); k.x = w.item.position.x; k.y = w.item.position.y; } }
       for (const [id, w] of want) {
         if (ringMap.has(id)) continue;
         const outer = RING_PREFIX + id + '/outer', inner = RING_PREFIX + id + '/inner';
@@ -235,8 +237,9 @@ async function syncRings() {
           makeRing(w.item, outer, w.r, { fillColor: '#17aef5', fillOpacity: 0.07, strokeColor: '#17aef5', strokeOpacity: 0.9, strokeWidth: 5, strokeDash: [24, 14] }),
           makeRing(w.item, inner, Math.min(1.5, w.r * 0.15), { fillColor: '#ffd83d', fillOpacity: 0.1, strokeColor: '#ffd83d', strokeOpacity: 0.9, strokeWidth: 3, strokeDash: [] }),
         );
-        ringMap.set(id, { r: w.r, d: dpi, ids: [outer, inner] });
+        ringMap.set(id, { r: w.r, d: dpi, ids: [outer, inner], x: w.item.position.x, y: w.item.position.y });
       }
+      for (const [ids, p] of mv) await OBR.scene.local.updateItems(ids, (l) => { for (const r of l) r.position = p; });
       if (del.length) await OBR.scene.local.deleteItems(del);
       if (add.length) await OBR.scene.local.addItems(add);
     } while (ringAgain);
@@ -254,7 +257,7 @@ function moveInit() {
     icons: [{ icon: new URL("move.svg", location.href).href, label: "ลากพร้อมเสียง", filter: { activeTools: ["rodeo.owlbear.tool/move"], roles: ["GM"] } }],
     onToolDragStart: async (c, e) => {
       let t = e.target;
-      if (role !== "GM" || !t || t.locked || !["CHARACTER", "PROP", "MOUNT"].includes(t.layer)) return;
+      if (role !== "GM" || !t || t.locked || t.layer === 'FOG') return;
       let d = { id: t.id, start: { x: t.position.x, y: t.position.y }, p: t.position, off: { x: t.position.x - e.pointerPosition.x, y: t.position.y - e.pointerPosition.y }, update: null, stop: null, done: false };
       moveDrag = d;
       if (t.layer === "CHARACTER" && !(t.metadata && t.metadata[EM_KEY])) OBR.player.select([t.id]).catch(() => {});
