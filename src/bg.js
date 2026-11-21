@@ -243,6 +243,50 @@ async function syncRings() {
   } catch (e) { console.warn(e); } finally { ringBusy = false; }
 }
 
+var MOVE_CHANNEL = "com.sbx.audio/pos", MOVE_TOOL = "com.sbx.audio/move", moveDrag = null, moveLast = 0;
+function moveApply(id, p) { let i = items.find((x) => x.id === id); if (i) { i.position = { x: p.x, y: p.y }; updateLevels(); } }
+function moveRings(id, p) { OBR.scene.local.updateItems((i) => i.id.startsWith(RING_PREFIX + id + "/"), (l) => { for (let r of l) r.position = { x: p.x, y: p.y }; }).catch(() => {}); }
+function moveSend(id, p) { OBR.broadcast.sendMessage(MOVE_CHANNEL, { id, p }, { destination: "REMOTE" }).catch(() => {}); }
+function moveInit() {
+  OBR.broadcast.onMessage(MOVE_CHANNEL, (e) => { let d = e.data; if (d && d.id && d.p) moveApply(d.id, d.p); });
+  OBR.tool.createMode({
+    id: MOVE_TOOL,
+    icons: [{ icon: new URL("move.svg", location.href).href, label: "ลากพร้อมเสียง", filter: { activeTools: ["rodeo.owlbear.tool/move"], roles: ["GM"] } }],
+    onToolDragStart: async (c, e) => {
+      let t = e.target;
+      if (role !== "GM" || !t || t.locked || !["CHARACTER", "PROP", "MOUNT"].includes(t.layer)) return;
+      let d = { id: t.id, start: { x: t.position.x, y: t.position.y }, p: t.position, off: { x: t.position.x - e.pointerPosition.x, y: t.position.y - e.pointerPosition.y }, update: null, stop: null, done: false };
+      moveDrag = d;
+      if (t.layer === "CHARACTER" && !(t.metadata && t.metadata[EM_KEY])) OBR.player.select([t.id]).catch(() => {});
+      try { let [u, st] = await OBR.interaction.startItemInteraction(t); if (d.done) st(); else { d.update = u; d.stop = st; } } catch (x) { console.warn(x); }
+    },
+    onToolDragMove: (c, e) => {
+      let d = moveDrag; if (!d) return;
+      let p = { x: e.pointerPosition.x + d.off.x, y: e.pointerPosition.y + d.off.y };
+      d.p = p;
+      if (d.update) d.update((x) => { x.position = p; });
+      moveApply(d.id, p);
+      let n = Date.now();
+      if (n - moveLast >= 100) { moveLast = n; moveSend(d.id, p); moveRings(d.id, p); }
+    },
+    onToolDragEnd: async () => {
+      let d = moveDrag; if (!d) return;
+      moveDrag = null; d.done = true;
+      let p = d.p;
+      try { p = await OBR.scene.grid.snapPosition(d.p); } catch (x) {}
+      moveApply(d.id, p); moveSend(d.id, p); moveRings(d.id, p);
+      try { await OBR.scene.items.updateItems([d.id], (l) => { for (let i of l) i.position = p; }); } catch (x) { console.warn(x); }
+      if (d.stop) d.stop();
+    },
+    onToolDragCancel: () => {
+      let d = moveDrag; if (!d) return;
+      moveDrag = null; d.done = true;
+      moveApply(d.id, d.start); moveSend(d.id, d.start); moveRings(d.id, d.start);
+      if (d.stop) d.stop();
+    },
+  });
+}
+
 OBR.onReady(async () => {
   myId = OBR.player.id;
   role = await OBR.player.getRole();
@@ -262,6 +306,7 @@ OBR.onReady(async () => {
 
   OBR.broadcast.onMessage(CH_UNLOCK, () => { getCtx().resume().catch(() => {}); tick(); });
   setInterval(tick, 250);
+  moveInit();
 
   // เมนูคลิกขวาบนของ/token (GM) -> ผูกเสียง
   OBR.contextMenu.create({
